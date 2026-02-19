@@ -27,14 +27,10 @@ print(f"Using Model: {model_name}")
 
 RETRY_OPTIONS = types.HttpRetryOptions(initial_delay=1, attempts=6)
 
-# ==========================================
-# 1. Tools Definition
-# ==========================================
-
 def append_to_state(
     tool_context: ToolContext, field: str, response: str
 ) -> dict[str, str]:
-    """Append new output to an existing state key."""
+
     existing_state = tool_context.state.get(field, [])
     tool_context.state[field] = existing_state + [response]
     logging.info(f"[Added to {field}] {response}")
@@ -46,7 +42,7 @@ def write_file(
     filename: str,
     content: str
 ) -> dict[str, str]:
-    """Write content to a file."""
+
     target_path = os.path.join(directory, filename)
     os.makedirs(os.path.dirname(target_path), exist_ok=True)
     with open(target_path, "w", encoding="utf-8") as f:
@@ -54,14 +50,9 @@ def write_file(
     logging.info(f"[File Written] {target_path}")
     return {"status": "success"}
 
-# Initialize Langchain Wikipedia Tool
 wiki_tool = LangchainTool(tool=WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper()))
 
-# ==========================================
-# 2. Agents Definition (The Historical Court)
-# ==========================================
 
-# --- Agent A: The Admirer ---
 admirer_agent = Agent(
     name="admirer",
     model=Gemini(model=model_name, retry_options=RETRY_OPTIONS),
@@ -85,7 +76,7 @@ admirer_agent = Agent(
     tools=[wiki_tool, append_to_state],
 )
 
-# --- Agent B: The Critic ---
+
 critic_agent = Agent(
     name="critic",
     model=Gemini(model=model_name, retry_options=RETRY_OPTIONS),
@@ -109,7 +100,7 @@ critic_agent = Agent(
     tools=[wiki_tool, append_to_state],
 )
 
-# --- Parallel: The Investigation Team ---
+
 investigation_team = ParallelAgent(
     name="investigation_team",
     description="Runs Admirer and Critic in parallel to gather both sides of the history.",
@@ -119,7 +110,7 @@ investigation_team = ParallelAgent(
     ]
 )
 
-# --- Agent C: The Judge ---
+
 judge_agent = Agent(
     name="judge",
     model=Gemini(model=model_name, retry_options=RETRY_OPTIONS),
@@ -150,7 +141,7 @@ judge_agent = Agent(
     tools=[append_to_state, exit_loop]
 )
 
-# --- Loop: Trial & Review ---
+
 trial_and_review = LoopAgent(
     name="trial_and_review",
     description="Iterates between investigation and judging until evidence is balanced.",
@@ -161,7 +152,7 @@ trial_and_review = LoopAgent(
     max_iterations=4,
 )
 
-# --- Agent D: The Verdict (Output) ---
+
 verdict_writer = Agent(
     name="verdict_writer",
     model=Gemini(model=model_name, retry_options=RETRY_OPTIONS),
@@ -190,7 +181,7 @@ verdict_writer = Agent(
     tools=[write_file],
 )
 
-# --- Sequential: Main Court Execution ---
+
 historical_court_system = SequentialAgent(
     name="historical_court_system",
     description="The main sequential flow from investigation to verdict.",
@@ -200,7 +191,7 @@ historical_court_system = SequentialAgent(
     ],
 )
 
-# --- Step 1: The Inquiry (Root) ---
+
 root_agent = Agent(
     name="court_clerk",
     model=Gemini(model=model_name, retry_options=RETRY_OPTIONS),
